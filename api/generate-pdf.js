@@ -1,16 +1,6 @@
 export default async function handler(req, res) {
 
-  // ✅ autoriser CORS
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-
-  // ✅ répondre à la requête OPTIONS (pré-vérification Canva)
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
-
-  // ✅ autoriser uniquement POST ensuite
+  // Autoriser seulement POST
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -19,6 +9,7 @@ export default async function handler(req, res) {
 
     const { templateId, payload } = req.body;
 
+    // Appel API PDFMonkey
     const response = await fetch("https://api.pdfmonkey.io/api/v1/documents", {
       method: "POST",
       headers: {
@@ -33,15 +24,31 @@ export default async function handler(req, res) {
       })
     });
 
+    // 🔎 Lecture réponse API
     const data = await response.json();
 
+    // 🧪 DEBUG — très important pour voir l'erreur réelle
+    console.log("REPONSE COMPLETE PDFMONKEY ↓");
+    console.log(JSON.stringify(data, null, 2));
+
+    // Si PDF généré
     if (data?.document?.download_url) {
       return res.status(200).json({ url: data.document.download_url });
-    } else {
-      return res.status(500).json({ error: "PDF non généré", data });
     }
 
+    // Sinon erreur PDFMonkey
+    return res.status(500).json({
+      error: "PDF non généré",
+      data: data
+    });
+
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+
+    console.error("ERREUR SERVEUR ↓");
+    console.error(err);
+
+    return res.status(500).json({
+      error: err.message
+    });
   }
 }
