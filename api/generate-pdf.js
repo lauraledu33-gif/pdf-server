@@ -1,5 +1,16 @@
 export default async function handler(req, res) {
 
+  // ✅ autoriser CORS
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  // ✅ répondre à la requête OPTIONS (pré-vérification Canva)
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
+  // ✅ autoriser uniquement POST ensuite
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -24,17 +35,10 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    const url =
-      data?.document?.public_url ||
-      data?.document?.download_url;
-
-    if (url) {
-      return res.status(200).json({ url });
+    if (data?.document?.download_url) {
+      return res.status(200).json({ url: data.document.download_url });
     } else {
-      return res.status(500).json({
-        error: "PDF non généré",
-        pdfmonkey_response: data
-      });
+      return res.status(500).json({ error: "PDF non généré", data });
     }
 
   } catch (err) {
