@@ -24,10 +24,17 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    if (data?.document?.download_url) {
-      return res.status(200).json({ url: data.document.download_url });
+    const url =
+      data?.document?.public_url ||
+      data?.document?.download_url;
+
+    if (url) {
+      return res.status(200).json({ url });
     } else {
-      return res.status(500).json({ error: "PDF non généré", data });
+      return res.status(500).json({
+        error: "PDF non généré",
+        pdfmonkey_response: data
+      });
     }
 
   } catch (err) {
